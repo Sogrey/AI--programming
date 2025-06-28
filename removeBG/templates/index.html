@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>背景去除工具</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/dropzone@5/dist/dropzone.css"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      #image-comparison {
+        margin: 20px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      @media (max-width: 600px) {
+        #image-comparison {
+          height: 300px;
+        }
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+      }
+      .dropzone {
+        border: 2px dashed #0087f7;
+        border-radius: 5px;
+        background: #f8f9fa;
+        padding: 30px;
+        text-align: center;
+        cursor: pointer;
+        margin: 20px 0;
+      }
+      #preview {
+        max-width: 100%;
+        margin-top: 20px;
+        border: 1px solid #ddd;
+        display: none;
+      }
+      .instructions {
+        background: #f0f0f0;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      /* 语言切换按钮样式 */
+      .lang-switcher {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        gap: 5px;
+      }
+      .lang-btn {
+        padding: 5px 10px;
+        background-color: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+      .lang-btn.active {
+        background-color: #0087f7;
+        color: white;
+        border-color: #0087f7;
+      }
+      /* 响应式调整 */
+      @media (max-width: 600px) {
+        .lang-switcher {
+          top: 10px;
+          right: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 语言切换按钮 -->
+    <div class="lang-switcher">
+      <button class="lang-btn" data-lang="zh">中文</button>
+      <button class="lang-btn" data-lang="en">English</button>
+    </div>
+
+    <h1 data-i18n="title">背景去除工具</h1>
+
+    <div class="instructions">
+      <p data-i18n="dragInstruction">将图片文件拖放到下方区域即可去除背景。</p>
+      <p data-i18n="supportedFormats">支持的格式: JPG, PNG</p>
+    </div>
+
+    <form action="/upload" class="dropzone" id="uploader"></form>
+
+    <div
+      id="status"
+      style="display: none; padding: 10px; background: #f8f8f8; margin: 10px 0"
+    ></div>
+    <div id="result">
+      <h2 data-i18n="comparison">对比效果：</h2>
+      <div id="image-comparison" style="width: 100%; height: 500px"></div>
+    </div>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.knightlab.com/libs/juxtapose/latest/css/juxtapose.css"
+    />
+    <script src="https://unpkg.com/dropzone@5/dist/dropzone.js"></script>
+    <script src="https://cdn.knightlab.com/libs/juxtapose/latest/js/juxtapose.min.js"></script>
+    <script>
+      // 语言配置
+      const i18n = {
+        zh: {
+          title: '背景去除工具',
+          dragInstruction: '将图片文件拖放到下方区域即可去除背景。',
+          supportedFormats: '支持的格式: JPG, PNG',
+          dropMessage: '拖放图片到此处或点击上传',
+          maxFileSize: '文件过大 (最大 5MB)',
+          comparison: '对比效果：',
+          processing: '正在处理图片...',
+          success: '背景去除成功！拖动滑块进行对比。',
+          original: '原图',
+          result: '结果',
+          uploadError: '上传失败',
+          processingError: '处理错误：',
+        },
+        en: {
+          title: 'Background Remover Tool',
+          dragInstruction:
+            'Drag and drop an image file onto the area below to remove its background.',
+          supportedFormats: 'Supported formats: JPG, PNG',
+          dropMessage: 'Drop image here or click to upload',
+          maxFileSize: 'File is too big (max 5MB)',
+          comparison: 'Comparison:',
+          processing: 'Processing your image...',
+          success:
+            'Background removed successfully! Drag the slider to compare.',
+          original: 'Original',
+          result: 'Result',
+          uploadError: 'Upload failed',
+          processingError: 'Processing error: ',
+        },
+      };
+
+      // 语言切换函数
+      function switchLanguage(lang) {
+        // 保存语言选择
+        localStorage.setItem('preferred_language', lang);
+
+        // 更新按钮状态
+        document.querySelectorAll('.lang-btn').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.lang === lang);
+        });
+
+        // 更新所有带有 data-i18n 属性的元素
+        document.querySelectorAll('[data-i18n]').forEach((element) => {
+          const key = element.getAttribute('data-i18n');
+          if (i18n[lang][key]) {
+            element.textContent = i18n[lang][key];
+          }
+        });
+
+        // 更新 Dropzone 文本
+        if (Dropzone.instances[0]) {
+          const dropzone = Dropzone.instances[0];
+          dropzone.options.dictDefaultMessage = i18n[lang].dropMessage;
+          dropzone.options.dictFileTooBig = i18n[lang].maxFileSize;
+        }
+      }
+
+      // 初始化语言
+      document.addEventListener('DOMContentLoaded', () => {
+        // 获取保存的语言选择，默认中文
+        const savedLang = localStorage.getItem('preferred_language') || 'zh';
+        switchLanguage(savedLang);
+
+        // 添加语言切换按钮事件监听
+        document.querySelectorAll('.lang-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            switchLanguage(btn.dataset.lang);
+          });
+        });
+      });
+
+      /**
+       * Dropzone configuration for image upload and background removal
+       */
+      Dropzone.options.uploader = {
+        // Basic configuration
+        paramName: 'file',
+        maxFiles: 1,
+        acceptedFiles: 'image/*',
+        dictDefaultMessage:
+          i18n[localStorage.getItem('preferred_language') || 'zh'].dropMessage,
+        dictFileTooBig:
+          i18n[localStorage.getItem('preferred_language') || 'zh'].maxFileSize,
+        addRemoveLinks: true,
+        timeout: 30000,
+        headers: {
+          Accept: 'image/png',
+        },
+
+        // Configure XHR to expect JSON response
+        xhr: function () {
+          const xhr = new XMLHttpRequest();
+          xhr.responseType = 'json';
+          return xhr;
+        },
+
+        // Initialize event handlers
+        init: function () {
+          const status = document.getElementById('status');
+
+          // Show processing status when upload starts
+          this.on('processing', function (file) {
+            const currentLang =
+              localStorage.getItem('preferred_language') || 'zh';
+            status.textContent = i18n[currentLang].processing;
+            status.style.display = 'block';
+            status.style.color = '#333';
+          });
+
+          // Handle successful upload and processing
+          this.on('success', function (file, response) {
+            try {
+              // Validate server response
+              if (
+                !response ||
+                !response.image ||
+                !response.image.startsWith('data:image/png;base64')
+              ) {
+                throw new Error('Invalid response format from server');
+              }
+
+              // Prepare comparison container
+              const comparisonContainer =
+                document.getElementById('image-comparison');
+              comparisonContainer.innerHTML = '';
+
+              // Read original image for comparison
+              const reader = new FileReader();
+              reader.onload = function (e) {
+                const originalImage = e.target.result;
+
+                /**
+                 * Initialize image comparison slider using Juxtapose
+                 * Shows original vs processed image side by side
+                 */
+                const currentLang =
+                  localStorage.getItem('preferred_language') || 'zh';
+                const slider = new juxtapose.JXSlider(
+                  '#image-comparison',
+                  [
+                    {
+                      src: originalImage,
+                      label: i18n[currentLang].original,
+                    },
+                    {
+                      src: response.image,
+                      label: i18n[currentLang].result,
+                    },
+                  ],
+                  {
+                    animate: true,
+                    showLabels: true,
+                    showCredits: false,
+                    startingPosition: '50%',
+                  }
+                );
+
+                // Show success message
+                status.textContent = i18n[currentLang].success;
+                status.style.color = 'green';
+                setTimeout(() => {
+                  status.style.display = 'none';
+                }, 3000);
+              };
+              reader.readAsDataURL(file);
+            } catch (error) {
+              // Handle processing errors
+              const currentLang =
+                localStorage.getItem('preferred_language') || 'zh';
+              status.textContent =
+                i18n[currentLang].processingError + error.message;
+              status.style.color = 'red';
+              console.error('Processing error:', error);
+            }
+          });
+
+          // Handle upload errors
+          this.on('error', function (file, message) {
+            let errorMsg = 'Upload failed';
+            if (typeof message === 'string') {
+              errorMsg = message;
+            } else if (message.error) {
+              errorMsg = message.error;
+            }
+            const currentLang =
+              localStorage.getItem('preferred_language') || 'zh';
+            status.textContent = i18n[currentLang].processingError + errorMsg;
+            status.style.color = 'red';
+          });
+
+          // Reset status when removing file
+          this.on('removedfile', function () {
+            status.style.display = 'none';
+            document.getElementById('image-comparison').innerHTML = '';
+          });
+        },
+      };
+    </script>
+  </body>
+</html>
