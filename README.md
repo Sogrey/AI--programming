@@ -1,4 +1,4 @@
-**[AI--programming](https://github.com/Sogrey/AI--programming)**
+**[AI-programming](https://github.com/Sogrey/AI-programming)**
 
 AI-编程
 
